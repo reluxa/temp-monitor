@@ -10,7 +10,7 @@
 #include "Adafruit_MCP9808.h"
 #include <BlynkSimpleEsp8266.h>
 
-#define BLYNK_PRINT Serial
+#define TRIGGER_PIN 13
 
 
 Adafruit_MCP9808 tempsensor = Adafruit_MCP9808();
@@ -36,12 +36,12 @@ void myTimerEvent()
   Serial.print("Temp: "); Serial.print(c); Serial.println("*C\t"); 
 }
 
-BLYNK_READ(V6) {
-  Blynk.virtualWrite(V6, millis() / 1000);
-  Serial.println("Blynk read V6 was valled"); 
-}
-
 void setup() {
+    pinMode(TRIGGER_PIN, INPUT);
+
+    WiFiManager wifiManager;
+    wifiManager.autoConnect();
+
     Serial.begin(115200);
     Serial.println("mounting FS...");
   
@@ -77,9 +77,26 @@ void setup() {
       Serial.println("failed to mount FS");
     }
 
+
+
+  Serial.println("local ip");
+  Serial.println(WiFi.localIP());
+
+  if (!tempsensor.begin()) {
+    Serial.println("Couldn't find MCP9808!");
+    while (1);
+  }
+
+  Blynk.config(blynk_token);
+  Blynk.connect();
+  timer.setInterval(1000L, myTimerEvent);
+}
+
+
+void configPortal() {
     WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
     WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
-    WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 32);
+    WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 34);
     
   
     WiFiManager wifiManager;
@@ -88,7 +105,15 @@ void setup() {
     wifiManager.addParameter(&custom_mqtt_port);
     wifiManager.addParameter(&custom_blynk_token);
 
-    wifiManager.autoConnect();
+    String ssid = "ESP" + String(ESP.getChipId());
+
+    if (!wifiManager.startConfigPortal(ssid.c_str())) {
+      Serial.println("failed to connect and hit timeout");
+      delay(3000);
+      //reset and try again, or maybe put it to deep sleep
+      ESP.reset();
+      delay(5000);
+    }
     Serial.println("connected...yeey :)");
 
     strcpy(mqtt_server, custom_mqtt_server.getValue());
@@ -114,21 +139,17 @@ void setup() {
     configFile.close();
   }
 
-  Serial.println("local ip");
-  Serial.println(WiFi.localIP());
-
-
-  if (!tempsensor.begin()) {
-    Serial.println("Couldn't find MCP9808!");
-    while (1);
-  }
-
-  Blynk.config("12786063c8ee4475b75435744f9f31a1");
-  //Blynk.connect();
-  timer.setInterval(1000L, myTimerEvent);
+  Blynk.config(blynk_token);
+  Blynk.connect();
 }
 
 void loop() {
   Blynk.run();
   timer.run(); // Initiates BlynkTimer
+
+  if (digitalRead(TRIGGER_PIN) == LOW) {
+        Serial.println("Starting config portal...");
+        configPortal();
+  }
+  
 }
