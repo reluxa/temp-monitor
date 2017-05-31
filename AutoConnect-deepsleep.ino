@@ -1,20 +1,24 @@
 #include <FS.h>                   
-#include <ESP8266WiFi.h>          
-
-#include <DNSServer.h>
-#include <ESP8266WebServer.h>
-#include <WiFiManager.h>
-#include <ArduinoJson.h>          
-
 #include <Wire.h>
 #include "Adafruit_MCP9808.h"
+
+#include <ESP8266WiFi.h>          //ESP8266 Core WiFi Library (you most likely already have this in your sketch)
+#include <DNSServer.h>            //Local DNS Server used for redirecting all requests to the configuration portal
+#include <ESP8266WebServer.h>     //Local WebServer used to serve the configuration portal
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
+#include <ArduinoJson.h>          
+
 #include <BlynkSimpleEsp8266.h>
 #include <PubSubClient.h>
 
-
-#define TRIGGER_PIN 13
+#define TRIGGER_PIN 13 //the pushbutton
 
 Adafruit_MCP9808 tempsensor = Adafruit_MCP9808();
+
+int start = 0;
+bool isConfig = false;
+bool shouldSaveConfig = false;
+float lastTemp = 0.0;
 
 char mqtt_server[40];
 char mqtt_port[6] = "8080";
@@ -23,32 +27,52 @@ char mqtt_password[40];
 char mqtt_topic[40];
 char blynk_token[34] = "YOUR_BLYNK_TOKEN";
 
-bool shouldSaveConfig = false;
-BlynkTimer timer;
-
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-//callback notifying us of the need to save config
-void saveConfigCallback () {
-  Serial.println("Should save config");
-  shouldSaveConfig = true;
+void doMeasurement() {
+  while (!tempsensor.begin()) {
+    Serial.println("Couldn't find MCP9808!");
+    delay(100);
+  }
+  
+  Serial.println("\nwake up MCP9808.... "); 
+  tempsensor.wake();   // wake up, ready to read!
+  lastTemp = tempsensor.readTempC();
+  Serial.print("Temp: "); Serial.print(lastTemp); Serial.println("*C\t"); 
+  Serial.println("Shutdown MCP9808.... ");
+  tempsensor.shutdown();
 }
 
-void myTimerEvent()
-{
-  float c = tempsensor.readTempC();
-  Blynk.virtualWrite(V5, c);
-  Blynk.virtualWrite(V6, millis() / 1000);
-  Serial.print("Temp: "); Serial.print(c); Serial.println("*C\t"); 
-
-  client.publish(mqtt_topic, String(c).c_str(), true);
+void sendBlynk() {
+  Serial.println("Connecting to Blynk");
+  Blynk.config(blynk_token);
+  Blynk.connect();
+  Serial.println("Sending data to Blynk");
+  Blynk.virtualWrite(V5, lastTemp);
 }
 
-void setup() {
-    Serial.begin(115200);
-    pinMode(TRIGGER_PIN, INPUT);
+void sendMqtt() {
+  WiFiClient espClient;
+  PubSubClient client(espClient);
+  client.setServer(mqtt_server, atoi(mqtt_port));
+  Serial.print("Attempting MQTT connection...");
+  String clientId = "Client-" + String();
 
+  String payload = String(ESP.getChipId());
+  payload.concat(" ");
+  payload.concat(lastTemp);
+
+  if (client.connect(clientId.c_str(), mqtt_user, mqtt_password)) {
+     Serial.println("connected");
+     client.publish(mqtt_topic, payload.c_str(), true);
+     client.disconnect();
+  } else {
+     Serial.print("failed, rc=");
+     Serial.print(client.state());
+  }
+
+}
+
+
+void reloadConfiguration() {
     Serial.println("mounting FS...");
     if (SPIFFS.begin()) {
       Serial.println("mounted file system...");
@@ -85,24 +109,21 @@ void setup() {
     } else {
       Serial.println("failed to mount FS");
     }
-
-    WiFiManager wifiManager;
-    wifiManager.autoConnect();
-
-    Serial.println("local ip");
-    Serial.println(WiFi.localIP());
-
-  if (!tempsensor.begin()) {
-    Serial.println("Couldn't find MCP9808!");
-    while (1);
-  }
-
-  Blynk.config(blynk_token);
-  Blynk.connect();
-  timer.setInterval(60000L, myTimerEvent);
-  client.setServer(mqtt_server, atoi(mqtt_port));
 }
 
+
+void establishWiFi() {
+  WiFiManager wifiManager;
+  wifiManager.setDebugOutput(false);
+  wifiManager.setConfigPortalTimeout(180);
+  wifiManager.autoConnect();
+  Serial.println("connected...yeey :)");
+}
+
+void saveConfigCallback () {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
+}
 
 void configPortal() {
     WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
@@ -134,11 +155,9 @@ void configPortal() {
 
     strcpy(mqtt_server, custom_mqtt_server.getValue());
     strcpy(mqtt_port, custom_mqtt_port.getValue());
- 
     strcpy(mqtt_user, custom_mqtt_user.getValue());
     strcpy(mqtt_password, custom_mqtt_password.getValue());
     strcpy(mqtt_topic, custom_mqtt_topic.getValue());
-   
     strcpy(blynk_token, custom_blynk_token.getValue());
 
   //save the custom parameters to FS
@@ -153,7 +172,6 @@ void configPortal() {
     json["mqtt_topic"] = mqtt_topic;
     json["blynk_token"] = blynk_token;
     
-
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
       Serial.println("failed to open config file for writing");
@@ -163,42 +181,35 @@ void configPortal() {
     json.printTo(configFile);
     configFile.close();
   }
-
-  Blynk.config(blynk_token);
-  Blynk.connect();
 }
 
 
-void reconnect() {
-  // Loop until we're reconnected
-  if (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    // If you do not want to use a username and password, change next line to
-    // if (client.connect("ESP8266Client")) {
-    if (client.connect("temp", mqtt_user, mqtt_password)) {
-      Serial.println("connected");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      delay(1000);
-    }
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIGGER_PIN, INPUT);
+  start = millis();
+
+  if (digitalRead(TRIGGER_PIN) == HIGH) {
+        Serial.println("Starting in configuration mode");
+        isConfig = true;
+  }
+
+  reloadConfiguration();
+
+  if (!isConfig) {
+    establishWiFi();
+    doMeasurement();
+    sendBlynk();
+    sendMqtt();
+    Serial.printf("Cycle time: %d ms\n", millis() - start);
+    Serial.println("Sleeping for 60 sec...");
+    ESP.deepSleep(60 * 1000000);
+  } else {
+    configPortal();
+    ESP.restart();
   }
 }
 
 void loop() {
-  Blynk.run();
-  timer.run(); // Initiates BlynkTimer
-
-
-  if (digitalRead(TRIGGER_PIN) == HIGH) {
-        Serial.println("Starting config portal...");
-        configPortal();
-  }
-
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop();
-  
+  //do nothing in the loop
 }
