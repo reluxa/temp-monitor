@@ -1,5 +1,5 @@
 # temp-monitor
-Wifi based temperature sensor based on ESP8266 NodeMCU V3 and high accuracy MCP9808 I2C sensor module.
+Wifi based temperature monitor based on ESP8266 NodeMCU V3 and high accuracy MCP9808 I2C sensor module.
 
 <img src="site/IMG_20170612_232044_HDR.jpg?raw=true" width="300">
 <img src="site/IMG_20170612_232103_HDR.jpg?raw=true" width="300">
