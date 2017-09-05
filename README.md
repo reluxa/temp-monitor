@@ -1,5 +1,13 @@
 # temp-monitor
-temp-monitor
+Temperature sensor based on NodeMCU and high accuracy MCP9808 I2C temperature sensor.
+
+<img src="site/IMG_20170612_232044_HDR.jpg?raw=true" width="300">
+<img src="site/IMG_20170612_232103_HDR.jpg?raw=true" width="300">
+
+## Features
+
+*  
+
 
 # Bill of Materials
 
@@ -15,7 +23,6 @@ Power supply | US $2.36 | ![power](https://ae01.alicdn.com/kf/HTB1eEJjIpXXXXcoXF
 **In total** | **US $11.26** |
 
 # hardware
-
 ![Alt text](site/IMG_20170501_121737_HDR.jpg?raw=true "Title")
 ![Alt text](site/IMG_20170502_081327_HDR.jpg?raw=true "Title")
 
