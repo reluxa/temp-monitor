@@ -39,4 +39,4 @@ Power supply | US $2.36 | <img src="https://ae01.alicdn.com/kf/HTB1eEJjIpXXXXcoX
 <img src="site/Screenshot_2017-09-02-15-42-20-619_cc.blynk.png" width="300">
 
 # Live (serverless) heatmap 
-https://rawgit.com/reluxa/temp-monitor/master/site
+https://rawgit.com/reluxa/temp-monitor/master/site/index.html
