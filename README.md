@@ -6,15 +6,15 @@ Wifi based temperature monitor based on ESP8266 NodeMCU V3 and high accuracy MCP
 
 ## Features
 
-* The MCP9808 has been selected as it's accuracy is 0.25 ℃ in a room temperature range. This parameter is much better compared to  the other popular (but also cheaper) sensors (DHT11, DHT22, DS1820B) as they usually have ~ 1 ℃ accuracy according to their datasheets.
+* The MCP9808 has been selected as the chip accuracy is around 0.25 ℃ in room temp rang. This is much better compared to the other more popular (but also cheaper) sensors (DHT11, DHT22, DS1820B) as they usually have 1 ℃ accuracy without calibration according to their datasheets.
 * Uses WIFI manager (https://github.com/tzapu/WiFiManager) to set the configuratio parameters
 * The configuration portal can be triggered by pushing the tactile switch while the device is booting up
-* The configuration json is saved to the internal SPIFFS
-* The device goes into deep sleep for 60 seconds after it has finished a read cycle, the dip switch is required because the reset pin must not be connected to the to the D?? pin while uploading sketches in Arduino IDE 
-* Integrates with the company's captive portal (once it connects to the WIFI using the PSK then it also authenticates with the LDAP user/password using the captive portal)
-* Sends the measured sensor values directly to blynk
-* Sends the measured sensor values to the configured MQTT topic ({topicname} and {topicname}/{esp chip ip})
-* A software based watchdog has been implemented which resets a device if it's running for more than 30 seconds (a usual cycle takes 5-7 seconds)  
+* The configuration json is saved to the internal SPIFFS, so it's preserved while the device is switched off
+* The device goes into deep sleep for 60 seconds after it has finished the read cycle, the dip switch is required here because the reset pin must not be connected to the to the D?? pin while the sketches are uploaded from Arduino IDE 
+* Integrated with the company captive portal (once it is connected to the WIFI using the PSK then it also need to be authenticated with and LDAP user/password pair on the captive portal)
+* The measured sensor values are sent to blynk using the configured blynk key
+* The measured sensor values are sent to the configured MQTT topic ( *topicname* and *topicname/esp chip ip* )
+* A software based watchdog has been implemented which resets the ESP if it is running for more than 30 seconds (a usual cycle takes 5-7 seconds)
 
 ## Future improvement ideas 
 * Implement DNS tunneling to send sensor data embedded in DNS requests instead of MQTT so an open quest wifi can be used wihtout any kind of authentication  
