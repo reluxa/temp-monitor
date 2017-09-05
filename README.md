@@ -1,13 +1,24 @@
 # temp-monitor
-Temperature sensor based on NodeMCU and high accuracy MCP9808 I2C temperature sensor.
+Wifi based temperature sensor based on NodeMCU and high accuracy MCP9808 I2C.
 
 <img src="site/IMG_20170612_232044_HDR.jpg?raw=true" width="300">
 <img src="site/IMG_20170612_232103_HDR.jpg?raw=true" width="300">
 
 ## Features
 
-*  
+* Uses WIFI manager (https://github.com/tzapu/WiFiManager) to set the configuratio parameters
+* The configuration portal can be triggered by pushing the tactile switch while the device is booting up
+* The configuration json is saved to the internal SPIFFS
+* The device goes into deep sleep for 60 seconds after it has finished a read cycle
+* Integrated with the company captive portal
+* Sends the measured sensor values directly to blynk
+* Sends the measured sensor values to the configured MQTT topic ({topicname} and {topicname}/{esp chip ip})
+* A software based watchdog has been implemented which resets a device if it's running for more than 30 seconds (a usual cycle takes 5-7 seconds)  
 
+## Future improvement ideas 
+* DNS tunneling to send sensor data instead of MQTT
+* HTTP Based remote update triggered via MQTT
+* Theare are 1-2 faulty read outs per day (above 100C or -0.06C, etc...) this should be filtered out and the measuring should be repeated.
 
 # Bill of Materials
 
