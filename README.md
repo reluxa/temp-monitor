@@ -3,6 +3,10 @@ Wifi based temperature monitor based on ESP8266 NodeMCU V3 and high accuracy MCP
 
 <img src="site/IMG_20170612_232044_HDR.jpg?raw=true" width="300"><img src="site/IMG_20170612_232103_HDR.jpg?raw=true" width="300">
 
+## 3D printed case
+
+<img src="site/IMG_20170906_111359.jpg?raw=true" width="250"> <img src="site/IMG_20170906_111419_HDR.jpg?raw=true" width="250"> <img src="site/IMG_20170906_111424_HDR.jpg?raw=true" width="250">
+
 ## Features
 
 * The MCP9808 has been selected as the chip accuracy is around 0.25 ℃ in room temp rang. This is much better compared to the other more popular (but also cheaper) sensors (DHT11, DHT22, DS1820B) as they usually have 1 ℃ accuracy without calibration according to their datasheets.
